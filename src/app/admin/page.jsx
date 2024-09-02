@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { prepareContractCall } from "thirdweb";
 import {
   useSendTransaction,
@@ -22,14 +22,19 @@ function AdminPage() {
   const { mutate: sendTransaction } = useSendTransaction();
 
   //Function to create new request
+  const isValidAddress = (address) => {
+    const regex = /^0x[0-9a-fA-F]{40}$/;
+    return regex.test(address);
+  };
+
   const createNewRequest = async () => {
     if (!account) {
       toast.error("No Wallet Connected");
-    } else if (!addDescription) {
-      toast.error("field cannot be empty");
-    } else if (!addRecipient) {
-      toast.error("field cannot be empty");
-    } else if (!addValue) {
+    }else if (!isValidAddress(addRecipient)){
+      toast.error("Invalid recipient address");
+
+    }
+     else if (!addDescription || !addRecipient || !addValue) {
       toast.error("field cannot be empty");
     } else if (account.address !== adminAddress) {
       toast.error("Only admin can perform this action");
@@ -42,29 +47,29 @@ function AdminPage() {
         });
         sendTransaction(transaction);
       } catch (error) {
+        toast.error("something went wrong");
         console.error("Error", error);
       }
     }
   };
 
   //Function to make payment
-
-  const { data: Target } = useReadContract({
+  const { data: Target, refetch: refetchTarget } = useReadContract({
     contract: contractFunding,
     method: "target",
     params: [],
   });
-  const { data: checkRequestData } = useReadContract({
+  const { data: checkRequestData, refetch: refetchRequestDetails } =
+    useReadContract({
+      contract: contractFunding,
+      method: "getRequestDetails",
+      params: [addRequestNumber],
+    });
+  const { data: RaiseAmount, refetch: refetchRaiseAmount } = useReadContract({
     contract: contractFunding,
-    method: "getRequestDetails",
-    params: [addRequestNumber],
-  });
-  const { data: RaiseAmount } = useReadContract({
-    contract: contractFunding,
-    method: "function raiseAmount() view returns (uint256)",
+    method: "raiseAmount",
     params: [],
   });
-
   const makePaymentFunction = async () => {
     if (!account) {
       toast.error("No Wallet Connected");
@@ -72,6 +77,14 @@ function AdminPage() {
       toast.error("Request number cannot be empty");
     } else if (account.address != adminAddress) {
       toast.error("Only admin can perform this action");
+    } else if (
+      checkRequestData[0] == "" &&
+      checkRequestData[1] == "0x0000000000000000000000000000000000000000" &&
+      checkRequestData[2] == "0" &&
+      checkRequestData[3] == false &&
+      checkRequestData[4] == 0
+    ) {
+      toast.error("Recipient does not exists");
     } else if (checkRequestData[3] == true) {
       toast.error("The request has been completed");
     } else if (RaiseAmount < Target || RaiseAmount != Target) {
@@ -85,10 +98,20 @@ function AdminPage() {
         });
         sendTransaction(transaction);
       } catch (error) {
+        toast.error("something went wrong");
         console.error("Error", error);
       }
     }
   };
+
+  useEffect(() => {
+    if (account) {
+      // Refetch contract data when account changes
+      refetchTarget();
+      refetchRequestDetails();
+      refetchRaiseAmount();
+    }
+  }, [account, addRequestNumber]);
 
   return (
     <>

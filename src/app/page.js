@@ -7,7 +7,6 @@ export default function Home() {
 
   
 
-  <div className="text-5xl"> Welcome to Crowdfunding Dapp</div>
   </main></>
    
   );
