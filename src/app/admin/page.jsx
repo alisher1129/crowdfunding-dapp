@@ -30,11 +30,9 @@ function AdminPage() {
   const createNewRequest = async () => {
     if (!account) {
       toast.error("No Wallet Connected");
-    }else if (!isValidAddress(addRecipient)){
+    } else if (!isValidAddress(addRecipient)) {
       toast.error("Invalid recipient address");
-
-    }
-     else if (!addDescription || !addRecipient || !addValue) {
+    } else if (!addDescription || !addRecipient || !addValue) {
       toast.error("field cannot be empty");
     } else if (account.address !== adminAddress) {
       toast.error("Only admin can perform this action");
@@ -70,6 +68,9 @@ function AdminPage() {
     method: "raiseAmount",
     params: [],
   });
+
+
+   
   const makePaymentFunction = async () => {
     if (!account) {
       toast.error("No Wallet Connected");

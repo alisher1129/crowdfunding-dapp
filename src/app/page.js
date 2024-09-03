@@ -9,6 +9,7 @@ import {
 import { contractFunding } from "../utils/contract";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 /* global BigInt */
 
 export default function Home() {
@@ -29,33 +30,78 @@ export default function Home() {
       method: "contributors",
       params: [account ? account.address : ""],
     });
+  const { data: Target, refetch: refetchTarget } = useReadContract({
+    contract: contractFunding,
+    method: "target",
+    params: [],
+  });
+
+  const { data: deadLineOfContract, refetch: refetchDeadLine } =
+    useReadContract({
+      contract: contractFunding,
+      method: "deadline",
+      params: [],
+    });
+
+  const { data: miniContribution } = useReadContract({
+    contract: contractFunding,
+    method: "minimumContribution",
+    params: [],
+  });
+
+ 
+  console.log("raise" , Target , contractTotalBalance)
+
+  const currentTime = Math.floor(new Date().getTime() / 1000);
 
   const sendEthFunction = async () => {
-    try {
-      const transaction = await prepareContractCall({
-        contract: contractFunding,
-        method: "sendEth",
-        params: [BigInt(sendUserEth * 10 ** 18)],
-        value: BigInt(sendUserEth * 10 ** 18),
-      });
-      sendTransaction(transaction);
-    } catch (error) {
-      toast.error("something went wrong");
-      console.error("Error", error);
+    if (!account) {
+      toast.error("No Wallet Connected");
+    } else if (!sendUserEth) {
+      toast.error("field cannot be empty");
+    } else if (
+      sendUserEth >= String(miniContribution) ||
+      sendUserEth >= String(0)
+    ) {
+      toast.error("You cannot send less than 100 Wei");
+    } else if (currentTime > deadLineOfContract) {
+      toast.error("Deadline has passed");
+    } else {
+      try {
+        const transaction = await prepareContractCall({
+          contract: contractFunding,
+          method: "sendEth",
+          params: [BigInt(sendUserEth)],
+          value: BigInt(sendUserEth),
+        });
+        sendTransaction(transaction);
+      } catch (error) {
+        toast.error("something went wrong");
+        console.error("Error", error);
+      }
     }
   };
 
   const reFundEthFunction = async () => {
-    try {
-      const transaction = await prepareContractCall({
-        contract: contractFunding,
-        method: "refund",
-        params: [],
-      });
-      sendTransaction(transaction);
-    } catch (error) {
-      toast.error("something went wrong");
-      console.error("Error", error);
+    if (!account) {
+      toast.error("No Wallet Connected");
+    } else if (
+      currentTime < deadLineOfContract ||
+      contractTotalBalance > Target
+    ) {
+      toast.error("You are not eligible for refund");
+    } else {
+      try {
+        const transaction = await prepareContractCall({
+          contract: contractFunding,
+          method: "refund",
+          params: [],
+        });
+        sendTransaction(transaction);
+      } catch (error) {
+        toast.error("something went wrong");
+        console.error("Error", error);
+      }
     }
   };
 
@@ -64,10 +110,11 @@ export default function Home() {
       // Refetch contract data when account changes
       refetchTotalBalance();
       refetchTotalContribution();
+      refetchTarget();
+      refetchDeadLine();
     }
   }, [account, sendEthFunction, reFundEthFunction]);
 
-  // console.log("balance", String(contractTotalBalance) , String(totalContribution) ,account.address);
   return (
     <>
       <div className=" flex flex-row mt-5 bg-gray-200 text-gray-800 p-8 w-full rounded-lg font-[sans-serif] max-w-screen-2xl mx-auto">
@@ -93,7 +140,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="flex flex-col justify-center items-center bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto mt-4">
+        <div className="flex flex-col justify-center items-center ml-5 bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto mt-4">
           <h3 className="text-gray-800 text-lg font-semibold">
             Total Contribution
           </h3>
@@ -113,16 +160,18 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="flex flex-col justify-evenly items-center  bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
+        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
           <h3 className="text-gray-800 text-lg font-semibold">
             Contract Balance
           </h3>
+          <p className="text-xl text-gray-500">
+            {contractTotalBalance ? String(contractTotalBalance) : "0"}
+          </p>
+        </div>
+        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
+          <h3 className="text-gray-800 text-lg font-semibold">Target </h3>
           <p className="text-xl text-gray-500 ">
-            {account
-              ? contractTotalBalance
-                ? String(contractTotalBalance)
-                : "0"
-              : "0"}
+            {Target ? String(Target) : "0"}
           </p>
         </div>
       </div>
