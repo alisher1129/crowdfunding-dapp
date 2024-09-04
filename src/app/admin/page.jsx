@@ -21,37 +21,6 @@ function AdminPage() {
   const account = useActiveAccount();
   const { mutate: sendTransaction } = useSendTransaction();
 
-  //Function to create new request
-  const isValidAddress = (address) => {
-    const regex = /^0x[0-9a-fA-F]{40}$/;
-    return regex.test(address);
-  };
-
-  const createNewRequest = async () => {
-    if (!account) {
-      toast.error("No Wallet Connected");
-    } else if (!isValidAddress(addRecipient)) {
-      toast.error("Invalid recipient address");
-    } else if (!addDescription || !addRecipient || !addValue) {
-      toast.error("field cannot be empty");
-    } else if (account.address !== adminAddress) {
-      toast.error("Only admin can perform this action");
-    } else {
-      try {
-        const transaction = await prepareContractCall({
-          contract: contractFunding,
-          method: "createRequest",
-          params: [addDescription, addRecipient, addValue],
-        });
-        sendTransaction(transaction);
-      } catch (error) {
-        toast.error("something went wrong");
-        console.error("Error", error);
-      }
-    }
-  };
-
-  //Function to make payment
   const { data: Target, refetch: refetchTarget } = useReadContract({
     contract: contractFunding,
     method: "target",
@@ -69,8 +38,35 @@ function AdminPage() {
     params: [],
   });
 
+  const isValidAddress = (address) => {
+    const regex = /^0x[0-9a-fA-F]{40}$/;
+    return regex.test(address);
+  };
 
-   
+  const createNewRequest = async () => {
+    if (!account) {
+      toast.error("No Wallet Connected");
+    } else if (!addDescription || !addRecipient || !addValue) {
+      toast.error("field cannot be empty");
+    } else if (!isValidAddress(addRecipient)) {
+      toast.error("Invalid recipient address");
+    } else if (account.address !== adminAddress) {
+      toast.error("Only admin can perform this action");
+    } else {
+      try {
+        const transaction = await prepareContractCall({
+          contract: contractFunding,
+          method: "createRequest",
+          params: [addDescription, addRecipient, addValue],
+        });
+        sendTransaction(transaction);
+      } catch (error) {
+        toast.error("something went wrong");
+        console.error("Error", error);
+      }
+    }
+  };
+
   const makePaymentFunction = async () => {
     if (!account) {
       toast.error("No Wallet Connected");
@@ -165,7 +161,7 @@ function AdminPage() {
                 type="text"
                 value={addRequestNumber}
                 onChange={(e) => setRequestNumber(e.target.value)}
-                placeholder="Enter Request Number"
+                placeholder="Enter Request id"
                 className="px-20 py-4 bg-[#f0f1f2] focus:bg-transparent text-black w-full text-sm border outline-[#007bff] rounded transition-all"
               />
             </div>
