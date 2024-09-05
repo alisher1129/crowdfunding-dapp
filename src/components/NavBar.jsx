@@ -1,4 +1,6 @@
 import React from "react";
+import Link from "next/link";
+
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@/app/client";
 import { chain } from "@/app/chain";
@@ -16,6 +18,12 @@ function NavBar() {
             />
           </a>
           <div className="flex max-lg:ml-auto space-x-3">
+            <Link
+              className="flex justify-center items-center bg-blue-700 text-white px-7 rounded-lg"
+              href={"/admin/setting"}
+            >
+              Setting
+            </Link>
             <ConnectButton client={client} chain={chain} />
           </div>
         </div>
