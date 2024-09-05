@@ -16,7 +16,6 @@ export default function Home() {
   const [sendUserEth, setUserSendEth] = useState("");
   const [sendRequestId, setSendRequestId] = useState("");
 
-
   const account = useActiveAccount();
   const { mutate: sendTransaction } = useSendTransaction();
 
@@ -61,24 +60,24 @@ export default function Home() {
       method: "getAllRequests",
       params: [],
     });
-    const { data:checkStatus  } = useReadContract({ 
-      contract: contractFunding,
-      method: "requests", 
-      params: [sendRequestId] 
-    });
-    const [
-      totalRequests,
-      requestIds,
-      descriptions,
-      recipients,
-      values,
-      completeds,
-      voters,
-      noOfVotersList,
-    ] = checkStatus;
+  const { data: checkStatus } = useReadContract({
+    contract: contractFunding,
+    method: "hasVoted",
+    params: [sendRequestId, account ? account.address : ""],
+  });
 
-    console.log("status", voters )
-
+  const date = new Date(String(deadLineOfContract) * 1000); // Multiply by 1000 for milliseconds
+  const formattedDate = date.toLocaleDateString("en-US", {
+    weekday: "short", // e.g., "Monday"
+    year: "numeric", // e.g., "2024"
+    month: "short", // e.g., "September"
+    day: "numeric", // e.g., "5"
+  });
+  const formattedTime = date.toLocaleTimeString("en-US", {
+    hour: "2-digit", // e.g., "12"
+    minute: "2-digit", // e.g., "00"
+    second: "2-digit", // e.g., "09"
+  });
 
   const requests = [];
   if (allRequestsData && allRequestsData.length > 0) {
@@ -154,8 +153,6 @@ export default function Home() {
     }
   };
 
-
-
   const voteFunction = async () => {
     if (!account) {
       toast.error("No Wallet Connected");
@@ -163,14 +160,12 @@ export default function Home() {
       toast.error("you must be contributor");
     } else if (checkStatus == true) {
       toast.error("You have already voted");
-    } 
-   
-    else {
+    } else {
       try {
-        const transaction = prepareContractCall({ 
+        const transaction = prepareContractCall({
           contract: contractFunding,
-          method: "voteRequest", 
-          params: [sendRequestId] 
+          method: "voteRequest",
+          params: [sendRequestId],
         });
         sendTransaction(transaction);
       } catch (error) {
@@ -179,27 +174,6 @@ export default function Home() {
       }
     }
   };
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   useEffect(() => {
     if (account) {
@@ -214,6 +188,28 @@ export default function Home() {
 
   return (
     <>
+      <div className=" flex flex-row mt-5 bg-gray-200 text-gray-800 p-8 w-full rounded-lg font-[sans-serif] max-w-screen-2xl mx-auto">
+        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
+          <h3 className="text-gray-800 text-lg font-semibold">Deadline</h3>
+          <p className="text-xl text-gray-500 ">{formattedDate}</p>
+          <p className="text-xl text-gray-500 ">{formattedTime}</p>
+        </div>
+        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
+          <h3 className="text-gray-800 text-lg font-semibold">
+            Contract Balance
+          </h3>
+          <p className="text-xl text-gray-500">
+            {contractTotalBalance ? String(contractTotalBalance) : "0"}
+          </p>
+        </div>
+        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
+          <h3 className="text-gray-800 text-lg font-semibold">Target </h3>
+          <p className="text-xl text-gray-500 ">
+            {Target ? String(Target) : "0"}
+          </p>
+        </div>
+      </div>
+
       <div className=" flex flex-row mt-5 bg-gray-200 text-gray-800 p-8 w-full rounded-lg font-[sans-serif] max-w-screen-2xl mx-auto">
         <div className="flex">
           <div className="bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto mt-4">
@@ -237,7 +233,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="flex flex-col justify-center items-center ml-5 bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto mt-4">
+        <div className="flex flex-col justify-center items-center  bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto mt-4">
           <h3 className="text-gray-800 text-lg font-semibold">
             Total Contribution
           </h3>
@@ -257,20 +253,6 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
-          <h3 className="text-gray-800 text-lg font-semibold">
-            Contract Balance
-          </h3>
-          <p className="text-xl text-gray-500">
-            {contractTotalBalance ? String(contractTotalBalance) : "0"}
-          </p>
-        </div>
-        <div className="flex flex-col justify-evenly items-center p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto">
-          <h3 className="text-gray-800 text-lg font-semibold">Target </h3>
-          <p className="text-xl text-gray-500 ">
-            {Target ? String(Target) : "0"}
-          </p>
-        </div>
         <div className="flex">
           <div className="bg-white shadow-[0_4px_12px_-5px_rgba(0,0,0,0.4)] p-6 w-full max-w-sm rounded-lg font-[sans-serif] overflow-hidden mx-auto mt-4">
             <h3 className="flex justify-center text-gray-800 text-lg font-semibold">
@@ -315,6 +297,9 @@ export default function Home() {
               <th class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 request id
               </th>
+              <th class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                voters
+              </th>
             </tr>
           </thead>
 
@@ -348,6 +333,9 @@ export default function Home() {
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-800">
                     {String(request.requestId)}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-800">
+                    {String(request.noOfVoters)}
                   </td>
                 </tr>
               ))}
